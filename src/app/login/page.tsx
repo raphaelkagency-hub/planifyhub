@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { signIn, getSession } from 'next-auth/react'
+import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Building2, Eye, EyeOff, Loader2 } from 'lucide-react'
@@ -38,15 +38,6 @@ export default function LoginPage() {
     }
   }
 
-  const loginAs = (role: 'dirigeant' | 'secretaire' | 'employe') => {
-    const accounts = {
-      dirigeant: { email: 'test.dirigeant@entreprise.com', password: 'Dirigeant123!' },
-      secretaire: { email: 'test.secretaire@entreprise.com', password: 'Secretaire123!' },
-      employe: { email: 'test.employe@entreprise.com', password: 'Employe123!' },
-    }
-    setForm(accounts[role])
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -63,34 +54,6 @@ export default function LoginPage() {
         </div>
 
         <div className="card">
-          {/* Quick login buttons */}
-          <div className="mb-6">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-              Comptes de démonstration
-            </p>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { role: 'dirigeant' as const, label: 'Dirigeant', color: 'bg-purple-100 text-purple-700 hover:bg-purple-200' },
-                { role: 'secretaire' as const, label: 'Secrétariat', color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
-                { role: 'employe' as const, label: 'Employé', color: 'bg-green-100 text-green-700 hover:bg-green-200' },
-              ].map(({ role, label, color }) => (
-                <button
-                  key={role}
-                  type="button"
-                  onClick={() => loginAs(role)}
-                  className={`${color} text-xs font-medium py-2 px-3 rounded-lg transition-colors`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            <p className="text-xs text-gray-400 mt-2 text-center">
-              Cliquez sur un rôle pour remplir automatiquement
-            </p>
-          </div>
-
-          <div className="border-t border-gray-100 my-6"></div>
-
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
