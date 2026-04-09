@@ -1,13 +1,5 @@
 {
-  "buildCommand": "prisma generate && prisma db push && next build",
+  "buildCommand": "prisma generate && next build",
   "framework": "nextjs",
-  "regions": ["cdg1"],
-  "env": {
-    "DATABASE_URL": "@database_url",
-    "NEXTAUTH_SECRET": "@nextauth_secret",
-    "NEXTAUTH_URL": "@nextauth_url",
-    "STRIPE_SECRET_KEY": "@stripe_secret_key",
-    "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY": "@stripe_publishable_key",
-    "STRIPE_WEBHOOK_SECRET": "@stripe_webhook_secret"
-  }
+  "regions": ["cdg1"]
 }
