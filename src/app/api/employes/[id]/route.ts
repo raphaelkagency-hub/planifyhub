@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, requireRole } from '@/lib/session'
 import bcrypt from 'bcryptjs'
-import { Role } from '@prisma/client'
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const { error, session } = await requireAuth()
@@ -39,7 +38,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     if (password) {
       updateData.password = await bcrypt.hash(password, 12)
     }
-    if (rest.role) updateData.role = rest.role as Role
+    if (rest.role) updateData.role = rest.role as string
     if (rest.dateEmbauche) updateData.dateEmbauche = new Date(rest.dateEmbauche)
 
     const employe = await prisma.employe.update({

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, requireRole } from '@/lib/session'
-import { Abonnement } from '@prisma/client'
 
 export async function GET(req: NextRequest) {
   const { error, session } = await requireAuth()
@@ -30,14 +29,10 @@ export async function PUT(req: NextRequest) {
     const body = await req.json()
     const { abonnement } = body
 
-    if (!['BASIQUE', 'STANDARD', 'PREMIUM'].includes(abonnement)) {
-      return NextResponse.json({ error: 'Plan invalide' }, { status: 400 })
-    }
-
     const entreprise = await prisma.entreprise.update({
       where: { id: session!.user.entrepriseId },
       data: {
-        abonnement: abonnement as Abonnement,
+        abonnement: abonnement as string,
         stripeStatus: 'active',
       },
     })
