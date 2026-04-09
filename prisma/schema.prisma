@@ -1,0 +1,191 @@
+// Schéma Prisma - Compatible SQLite (local) et PostgreSQL (production Vercel)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Entreprise {
+  id               String   @id @default(cuid())
+  nom              String
+  type             String   @default("SARL")
+  siret            String?
+  adresse          String?
+  codePostal       String?
+  ville            String?
+  telephone        String?
+  email            String?
+  siteWeb          String?
+  logo             String?
+  abonnement       String   @default("PRO")
+  stripeCustomerId String?
+  stripeSubId      String?
+  stripeStatus     String?  @default("active")
+  // Horaires
+  heureDebut       String   @default("09:00")
+  heureFin         String   @default("18:00")
+  pauseDuree       Int      @default(60)
+  joursOuvres      String   @default("1,2,3,4,5")
+  // Nouvelles options
+  horairesDebutConfig      String   @default("08:00,08:30,09:00,09:30,10:00")
+  heuresContractuelles     Int      @default(35)
+  heuresSupPayees          Boolean  @default(true)
+  tauxHeuresSuppMultiplier Float    @default(1.25)
+  // Email pro
+  emailSmtpHost    String?
+  emailSmtpPort    String?
+  emailSmtpUser    String?
+  emailSmtpPass    String?
+  emailSmtpSecure  Boolean  @default(true)
+  emailProvider    String?  // "gmail", "smtp"
+  emailGmailToken  String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  employes         Employe[]
+  plannings        Planning[]
+  pointages        Pointage[]
+  paies            Paie[]
+  chatMessages     ChatMessage[]
+  invitationTokens InvitationToken[]
+}
+
+model Employe {
+  id                   String     @id @default(cuid())
+  email                String     @unique
+  password             String
+  nom                  String
+  prenom               String
+  role                 String     @default("EMPLOYE")
+  poste                String?
+  tauxHoraire          Float      @default(15.0)
+  telephone            String?
+  adresse              String?
+  dateEmbauche         DateTime?
+  heuresContractuelles Int?       // override entreprise si défini
+  entrepriseId         String
+  entreprise           Entreprise @relation(fields: [entrepriseId], references: [id], onDelete: Cascade)
+  actif                Boolean    @default(true)
+  passwordDefinedBy    String     @default("self") // "self" | "admin"
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+
+  pointages Pointage[]
+  paies     Paie[]
+  plannings Planning[]
+
+  @@index([entrepriseId])
+  @@index([email])
+}
+
+model InvitationToken {
+  id           String     @id @default(cuid())
+  email        String
+  token        String     @unique
+  type         String     // REGISTRATION | SECRETARY_INVITE
+  entrepriseId String?
+  entrepriseNom String?
+  prenom       String?
+  nom          String?
+  expiresAt    DateTime
+  used         Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+
+  entreprise   Entreprise? @relation(fields: [entrepriseId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([email])
+}
+
+model Planning {
+  id           String     @id @default(cuid())
+  entrepriseId String
+  entreprise   Entreprise @relation(fields: [entrepriseId], references: [id], onDelete: Cascade)
+  employeId    String?
+  employe      Employe?   @relation(fields: [employeId], references: [id], onDelete: SetNull)
+  date         DateTime
+  heureDebut   String
+  heureFin     String
+  pauseDuree   Int        @default(60)
+  notes        String?
+  statut       String     @default("PLANIFIE")
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([entrepriseId])
+  @@index([employeId])
+  @@index([date])
+}
+
+model Pointage {
+  id                String     @id @default(cuid())
+  entrepriseId      String
+  entreprise        Entreprise @relation(fields: [entrepriseId], references: [id], onDelete: Cascade)
+  employeId         String
+  employe           Employe    @relation(fields: [employeId], references: [id], onDelete: Cascade)
+  date              DateTime
+  heureArrivee      String?
+  heureDepart       String?
+  pauseDuree        Int        @default(0)
+  notes             String?
+  statut            String     @default("PRESENT")
+  heuresTravaillees Float?
+  heuresSupp        Float?     @default(0)
+  valide            Boolean    @default(false)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  @@index([entrepriseId])
+  @@index([employeId])
+  @@index([date])
+}
+
+model Paie {
+  id                    String     @id @default(cuid())
+  entrepriseId          String
+  entreprise            Entreprise @relation(fields: [entrepriseId], references: [id], onDelete: Cascade)
+  employeId             String
+  employe               Employe    @relation(fields: [employeId], references: [id], onDelete: Cascade)
+  periode               String
+  heuresTravaillees     Float
+  heuresSupp            Float      @default(0)
+  tauxHoraire           Float
+  tauxHeuresSupp        Float      @default(1.25)
+  salaireBrut           Float
+  cotisationsSalariales Float      @default(0)
+  cotisationsPatronales Float      @default(0)
+  salaireNet            Float
+  congesPayes           Float      @default(0)
+  primes                Float      @default(0)
+  retenues              Float      @default(0)
+  notes                 String?
+  valide                Boolean    @default(false)
+  valideePar            String?    // id de l'employé qui a validé
+  valideeAt             DateTime?
+  genereAt              DateTime   @default(now())
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+
+  @@unique([employeId, periode])
+  @@index([entrepriseId])
+  @@index([employeId])
+}
+
+model ChatMessage {
+  id           String     @id @default(cuid())
+  entrepriseId String
+  entreprise   Entreprise @relation(fields: [entrepriseId], references: [id], onDelete: Cascade)
+  auteurId     String
+  auteurNom    String
+  auteurRole   String
+  contenu      String
+  type         String     @default("TEXT")
+  createdAt    DateTime   @default(now())
+
+  @@index([entrepriseId])
+  @@index([createdAt])
+}
