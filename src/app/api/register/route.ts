@@ -1,16 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
-import crypto from 'crypto'
-import { sendEmail, emailRegistrationToken } from '@/lib/email'
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { entrepriseNom, entrepriseType, siret, prenom, nom, email } = body
+    const { entrepriseNom, entrepriseType, siret, prenom, nom, email, password } = body
 
-    if (!entrepriseNom || !prenom || !nom || !email) {
+    if (!entrepriseNom || !prenom || !nom || !email || !password) {
       return NextResponse.json({ error: 'Tous les champs obligatoires doivent être remplis' }, { status: 400 })
+    }
+
+    if (password.length < 8) {
+      return NextResponse.json({ error: 'Le mot de passe doit contenir au moins 8 caractères' }, { status: 400 })
     }
 
     const existingUser = await prisma.employe.findUnique({ where: { email } })
@@ -18,7 +20,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Cet email est déjà utilisé' }, { status: 400 })
     }
 
-    // Create the entreprise first
+    // Créer l'entreprise
     const entreprise = await prisma.entreprise.create({
       data: {
         nom: entrepriseNom,
@@ -28,35 +30,21 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    // Create invitation token (24h)
-    const token = crypto.randomBytes(32).toString('hex')
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
-
-    await prisma.invitationToken.create({
+    // Créer le compte dirigeant directement
+    const hashedPassword = await bcrypt.hash(password, 12)
+    await prisma.employe.create({
       data: {
         email,
-        token,
-        type: 'REGISTRATION',
-        entrepriseId: entreprise.id,
-        entrepriseNom,
-        prenom,
+        password: hashedPassword,
         nom,
-        expiresAt,
+        prenom,
+        role: 'DIRIGEANT',
+        entrepriseId: entreprise.id,
+        passwordDefinedBy: 'self',
       },
     })
 
-    // Try to send email
-    const emailContent = emailRegistrationToken(email, token, entrepriseNom)
-    const result = await sendEmail(emailContent)
-
-    const setupUrl = `${process.env.NEXTAUTH_URL}/setup/${token}`
-
-    return NextResponse.json({
-      success: true,
-      emailSent: result.sent,
-      // Return setup URL for dev mode (no SMTP configured)
-      setupUrl: result.sent ? null : setupUrl,
-    })
+    return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Register error:', error)
     return NextResponse.json({ error: 'Erreur lors de la création du compte' }, { status: 500 })
