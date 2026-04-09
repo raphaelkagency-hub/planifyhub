@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { signIn } from 'next-auth/react'
 import { Building2, Loader2, CheckCircle, ArrowRight, Eye, EyeOff } from 'lucide-react'
 
 const COMPANY_TYPES = ['SARL', 'EURL', 'SAS', 'SASU', 'SA', 'SNC', 'Auto-entrepreneur', 'Association']
@@ -48,7 +49,17 @@ export default function RegisterPage() {
         setError(data.error ?? 'Erreur lors de la création du compte')
       } else {
         setDone(true)
-        setTimeout(() => router.push('/login'), 2500)
+        // Auto-login puis redirection vers la page de paiement
+        const result = await signIn('credentials', {
+          email: form.email,
+          password: form.password,
+          redirect: false,
+        })
+        if (result?.ok) {
+          setTimeout(() => router.push('/paiement'), 1500)
+        } else {
+          setTimeout(() => router.push('/login'), 1500)
+        }
       }
     } catch {
       setError('Une erreur est survenue. Réessayez.')
@@ -115,7 +126,7 @@ export default function RegisterPage() {
               <CheckCircle className="w-14 h-14 text-green-500 mx-auto mb-4" />
               <h2 className="text-xl font-bold text-gray-900 mb-2">Compte créé !</h2>
               <p className="text-gray-500 mb-1">Bienvenue <strong>{form.prenom}</strong> 👋</p>
-              <p className="text-sm text-gray-400">Redirection vers la connexion...</p>
+              <p className="text-sm text-gray-400">Redirection vers la page de paiement...</p>
             </div>
           )}
 

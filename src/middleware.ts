@@ -32,6 +32,7 @@ export default withAuth(
           path === '/' ||
           path === '/login' ||
           path === '/register' ||
+          path === '/paiement' ||
           path.startsWith('/setup') ||
           path.startsWith('/api/setup') ||
           path.startsWith('/api/register') ||
