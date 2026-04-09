@@ -48,6 +48,7 @@ export default function RegisterPage() {
       if (!res.ok) {
         setError(data.error ?? 'Erreur lors de la création du compte')
       } else {
+        setStep(4)
         setDone(true)
         // Auto-login puis redirection vers la page de paiement
         const result = await signIn('credentials', {
@@ -68,7 +69,7 @@ export default function RegisterPage() {
     }
   }
 
-  const STEPS = ['Votre entreprise', 'Vos coordonnées', 'Mot de passe']
+  const STEPS = ['Votre entreprise', 'Vos coordonnées', 'Mot de passe', 'Paiement']
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 100%)' }}>
@@ -87,7 +88,7 @@ export default function RegisterPage() {
         </div>
 
         {/* Progress */}
-        {!done && (
+        {(
           <div className="mb-6">
             <div className="flex items-center gap-1 mb-2">
               {STEPS.map((label, i) => {
@@ -101,7 +102,7 @@ export default function RegisterPage() {
                     }`} style={active ? { background: '#1e3a5f' } : {}}>
                       {done_ ? '✓' : s}
                     </div>
-                    {s < 3 && <div className={`h-0.5 flex-1 ${done_ ? 'bg-green-500' : 'bg-gray-200'}`} />}
+                    {s < STEPS.length && <div className={`h-0.5 flex-1 ${done_ ? 'bg-green-500' : 'bg-gray-200'}`} />}
                   </div>
                 )
               })}
