@@ -26,16 +26,7 @@ export default function RegisterPage() {
     passwordConfirm: '',
   })
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (form.password !== form.passwordConfirm) {
-      setError('Les mots de passe ne correspondent pas')
-      return
-    }
-    if (form.password.length < 8) {
-      setError('Le mot de passe doit contenir au moins 8 caractères')
-      return
-    }
+  const handleSubmit = async () => {
     setLoading(true)
     setError('')
     try {
@@ -48,9 +39,8 @@ export default function RegisterPage() {
       if (!res.ok) {
         setError(data.error ?? 'Erreur lors de la création du compte')
       } else {
-        setStep(4)
+        setStep(5)
         setDone(true)
-        // Auto-login puis redirection vers la page de paiement
         const result = await signIn('credentials', {
           email: form.email,
           password: form.password,
@@ -69,7 +59,7 @@ export default function RegisterPage() {
     }
   }
 
-  const STEPS = ['Votre entreprise', 'Vos coordonnées', 'Mot de passe', 'Paiement']
+  const STEPS = ['Votre entreprise', 'Vos coordonnées', 'Mot de passe', 'Récapitulatif', 'Paiement']
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 100%)' }}>
@@ -88,30 +78,28 @@ export default function RegisterPage() {
         </div>
 
         {/* Progress */}
-        {(
-          <div className="mb-6">
-            <div className="flex items-center gap-1 mb-2">
-              {STEPS.map((label, i) => {
-                const s = i + 1
-                const active = step === s
-                const done_ = step > s
-                return (
-                  <div key={s} className="flex items-center gap-1 flex-1">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0 ${
-                      done_ ? 'bg-green-500 text-white' : active ? 'text-white' : 'bg-gray-200 text-gray-500'
-                    }`} style={active ? { background: '#1e3a5f' } : {}}>
-                      {done_ ? '✓' : s}
-                    </div>
-                    {s < STEPS.length && <div className={`h-0.5 flex-1 ${done_ ? 'bg-green-500' : 'bg-gray-200'}`} />}
+        <div className="mb-6">
+          <div className="flex items-center gap-1 mb-2">
+            {STEPS.map((label, i) => {
+              const s = i + 1
+              const active = step === s
+              const done_ = step > s
+              return (
+                <div key={s} className="flex items-center gap-1 flex-1">
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 ${
+                    done_ ? 'bg-green-500 text-white' : active ? 'text-white' : 'bg-gray-200 text-gray-500'
+                  }`} style={active ? { background: '#1e3a5f' } : {}}>
+                    {done_ ? '✓' : s}
                   </div>
-                )
-              })}
-            </div>
-            <div className="flex justify-between text-xs text-gray-400">
-              {STEPS.map(l => <span key={l}>{l}</span>)}
-            </div>
+                  {s < STEPS.length && <div className={`h-0.5 flex-1 ${done_ ? 'bg-green-500' : 'bg-gray-200'}`} />}
+                </div>
+              )
+            })}
           </div>
-        )}
+          <div className="flex justify-between text-xs text-gray-400">
+            {STEPS.map(l => <span key={l} className="truncate text-center" style={{ width: '18%' }}>{l}</span>)}
+          </div>
+        </div>
 
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
 
@@ -121,7 +109,7 @@ export default function RegisterPage() {
             </div>
           )}
 
-          {/* Succès */}
+          {/* Step 5 : Succès / Paiement */}
           {done && (
             <div className="text-center py-4">
               <CheckCircle className="w-14 h-14 text-green-500 mx-auto mb-4" />
@@ -136,7 +124,7 @@ export default function RegisterPage() {
             <div className="space-y-5">
               <h2 className="text-lg font-semibold text-gray-900">Votre entreprise</h2>
               <div>
-                <label className="form-label">Nom de l'entreprise *</label>
+                <label className="form-label">Nom de l&apos;entreprise *</label>
                 <input type="text" required className="form-input" placeholder="Mon Entreprise SARL"
                   value={form.entrepriseNom} onChange={e => setForm({ ...form, entrepriseNom: e.target.value })} />
               </div>
@@ -197,7 +185,7 @@ export default function RegisterPage() {
 
           {/* Step 3 : Mot de passe */}
           {!done && step === 3 && (
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-5">
               <h2 className="text-lg font-semibold text-gray-900">Choisissez un mot de passe</h2>
               <div>
                 <label className="form-label">Mot de passe *</label>
@@ -230,24 +218,51 @@ export default function RegisterPage() {
                   <p className="text-xs text-red-500 mt-1">Les mots de passe ne correspondent pas</p>
                 )}
               </div>
-
-              {/* Récapitulatif */}
-              <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-600 space-y-1">
-                <p>🏢 <strong>{form.entrepriseNom}</strong> ({form.entrepriseType})</p>
-                <p>👤 {form.prenom} {form.nom} — {form.email}</p>
-              </div>
-
               <div className="flex gap-3">
                 <button type="button" className="btn-secondary flex-1 py-3" onClick={() => setStep(2)}>← Retour</button>
-                <button type="submit"
-                  disabled={loading || !form.password || form.password !== form.passwordConfirm}
+                <button type="button"
+                  disabled={!form.password || form.password.length < 8 || form.password !== form.passwordConfirm}
+                  className="flex-1 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 disabled:opacity-50"
+                  style={{ background: '#1e3a5f' }}
+                  onClick={() => setStep(4)}>
+                  Continuer <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 4 : Récapitulatif */}
+          {!done && step === 4 && (
+            <div className="space-y-5">
+              <h2 className="text-lg font-semibold text-gray-900">Récapitulatif</h2>
+              <div className="space-y-3">
+                <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Entreprise</p>
+                  <p className="text-sm text-gray-700">🏢 <strong>{form.entrepriseNom}</strong> — {form.entrepriseType}</p>
+                  {form.siret && <p className="text-sm text-gray-500">SIRET : {form.siret}</p>}
+                </div>
+                <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Dirigeant</p>
+                  <p className="text-sm text-gray-700">👤 <strong>{form.prenom} {form.nom}</strong></p>
+                  <p className="text-sm text-gray-500">✉️ {form.email}</p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Abonnement</p>
+                  <p className="text-sm text-gray-700">💳 Plan Tout Inclus — <strong>200€/mois</strong></p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button type="button" className="btn-secondary flex-1 py-3" onClick={() => setStep(3)}>← Retour</button>
+                <button type="button"
+                  disabled={loading}
+                  onClick={handleSubmit}
                   className="flex-1 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 disabled:opacity-50"
                   style={{ background: '#1e3a5f' }}>
                   {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {loading ? 'Création...' : 'Créer mon espace'}
+                  {loading ? 'Création...' : 'Créer mon espace →'}
                 </button>
               </div>
-            </form>
+            </div>
           )}
         </div>
 
