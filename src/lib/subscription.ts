@@ -74,3 +74,8 @@ export function canAddEmploye(planId: string, currentCount: number): boolean {
   if (max === null) return true
   return currentCount < max
 }
+
+// Compat: toutes les fonctionnalités sont incluses dans tous les plans
+export function hasFeature(_abonnement: string, _feature: string): boolean {
+  return true
+}
