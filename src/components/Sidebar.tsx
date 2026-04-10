@@ -17,11 +17,10 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
 
   const role = session?.user?.role ?? ''
-  const planName = (session?.user as any)?.planId
-    ? ((session.user as any).planId === 'STARTER' ? 'Starter'
-      : (session.user as any).planId === 'BUSINESS' ? 'Business'
-      : (session.user as any).planId === 'ENTERPRISE' ? 'Enterprise'
-      : 'Tout inclus')
+  const planId = (session?.user as any)?.planId ?? ''
+  const planName = planId === 'STARTER' ? 'Starter'
+    : planId === 'BUSINESS' ? 'Business'
+    : planId === 'ENTERPRISE' ? 'Enterprise'
     : 'Tout inclus'
 
   const isActive = (path: string) => pathname === path || pathname.startsWith(path + '/')
