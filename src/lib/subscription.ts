@@ -1,90 +1,76 @@
-export type AbonnementType = string
+export type PlanId = 'STARTER' | 'BUSINESS' | 'ENTERPRISE' | 'PRO'
 
-export interface FeatureSet {
-  planningSimple: boolean
-  pointageSimple: boolean
-  fichesPaieBase: boolean
-  notesFacultatives: boolean
-  messagerie: boolean
-  exportLimite: boolean
-  exportComplet: boolean
-  chatLectureSeule: boolean
-  dashboardDirigeant: boolean
-  gestionCongesAbsences: boolean
-  notifications: boolean
-  creationComptesSecretariat: boolean
-  personnalisationHoraires: boolean
-  rapportsRHFinanciers: boolean
-  siteVitrine: boolean
-  supportPrioritaire: boolean
-  optimisationPlanning: boolean
-  dashboardPerformance: boolean
-  emailIntegration: boolean
+export interface Plan {
+  id: string
+  name: string
+  price: number
+  maxEmployes: number | null
+  features: string[]
+  description: string
+  popular?: boolean
 }
 
-// Toutes les fonctionnalités activées — plan unique
-const TOUT_INCLUS: FeatureSet = {
-  planningSimple: true,
-  pointageSimple: true,
-  fichesPaieBase: true,
-  notesFacultatives: true,
-  messagerie: true,
-  exportLimite: true,
-  exportComplet: true,
-  chatLectureSeule: true,
-  dashboardDirigeant: true,
-  gestionCongesAbsences: true,
-  notifications: true,
-  creationComptesSecretariat: true,
-  personnalisationHoraires: true,
-  rapportsRHFinanciers: true,
-  siteVitrine: false,
-  supportPrioritaire: true,
-  optimisationPlanning: true,
-  dashboardPerformance: true,
-  emailIntegration: true,
+export const PLANS: Plan[] = [
+  {
+    id: 'STARTER',
+    name: 'Starter',
+    price: 49,
+    maxEmployes: 10,
+    description: 'Parfait pour les petites équipes',
+    features: [
+      "Jusqu'à 10 employés",
+      'Planning & pointage',
+      'Fiches de paie',
+      'Congés & absences',
+      'Chat interne',
+      'Export Excel',
+      'Support email',
+    ],
+  },
+  {
+    id: 'BUSINESS',
+    name: 'Business',
+    price: 99,
+    maxEmployes: 25,
+    description: 'Pour les équipes en croissance',
+    popular: true,
+    features: [
+      "Jusqu'à 25 employés",
+      'Tout Starter inclus',
+      'Facturation & devis',
+      'Gestion de documents',
+      'Rapports avancés',
+      'Export PDF & comptable',
+      'Support prioritaire',
+    ],
+  },
+  {
+    id: 'ENTERPRISE',
+    name: 'Enterprise',
+    price: 199,
+    maxEmployes: null,
+    description: 'Pour les grandes entreprises',
+    features: [
+      'Employés illimités',
+      'Tout Business inclus',
+      'Onboarding personnalisé',
+      'SLA garanti 99.9%',
+      'Support dédié',
+      'Formation incluse',
+    ],
+  },
+]
+
+export function getPlan(planId: string): Plan {
+  return PLANS.find(p => p.id === planId) ?? PLANS[0]
 }
 
-// Quel que soit le nom en base (PRO, BASIQUE, STANDARD, PREMIUM), tout est inclus
-export const FEATURES: Record<string, FeatureSet> = {
-  PRO: TOUT_INCLUS,
-  BASIQUE: TOUT_INCLUS,
-  STANDARD: TOUT_INCLUS,
-  PREMIUM: TOUT_INCLUS,
+export function getMaxEmployes(planId: string): number | null {
+  return getPlan(planId).maxEmployes
 }
 
-export function getFeatures(abonnement: string): FeatureSet {
-  return TOUT_INCLUS
+export function canAddEmploye(planId: string, currentCount: number): boolean {
+  const max = getMaxEmployes(planId)
+  if (max === null) return true
+  return currentCount < max
 }
-
-export function hasFeature(abonnement: string, feature: keyof FeatureSet): boolean {
-  return TOUT_INCLUS[feature] ?? true
-}
-
-export const PLAN = {
-  id: 'PRO',
-  name: 'Tout inclus',
-  price: 200,
-  description: 'Toutes les fonctionnalités pour gérer votre entreprise',
-  stripePriceId: process.env.STRIPE_PRICE_PRO,
-  features: [
-    'Planning & gestion des horaires',
-    'Pointage des présences',
-    'Fiches de paie automatiques',
-    'Notes facultatives sur fiches',
-    'Gestion congés & absences',
-    'Chat interne (lecture seule employés)',
-    'Export Excel & Google Sheets illimité',
-    'Dashboard dirigeant complet',
-    'Rapports RH & financiers avancés',
-    'Notifications en temps réel',
-    'Création de comptes par secrétariat',
-    'Personnalisation des horaires & pauses',
-    'Dashboard performance par employé',
-    'Intégration email complète',
-    'Support prioritaire',
-  ],
-}
-
-// Gardé pour compatibilité avec l'ancien code
-export const PLANS = [PLAN]

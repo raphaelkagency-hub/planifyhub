@@ -47,6 +47,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email déjà utilisé' }, { status: 400 })
     }
 
+    // Vérifier limite d'employés selon le plan
+    const entreprisePlan = await prisma.entreprise.findUnique({
+      where: { id: session!.user.entrepriseId },
+      select: { abonnement: true }
+    })
+    const employeCount = await prisma.employe.count({
+      where: { entrepriseId: session!.user.entrepriseId }
+    })
+    const { canAddEmploye } = await import('@/lib/subscription')
+    if (!canAddEmploye(entreprisePlan?.abonnement ?? 'STARTER', employeCount)) {
+      return NextResponse.json(
+        { error: "Limite d'employés atteinte pour votre abonnement. Passez au plan supérieur." },
+        { status: 403 }
+      )
+    }
+
     const hashedPassword = await bcrypt.hash(password, 12)
 
     const entreprise = await prisma.entreprise.findUnique({

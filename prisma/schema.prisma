@@ -52,6 +52,11 @@ model Entreprise {
   paies            Paie[]
   chatMessages     ChatMessage[]
   invitationTokens InvitationToken[]
+  congesAbsences   CongeAbsence[]
+  clients          Client[]
+  devis            Devis[]
+  factures         Facture[]
+  documents        Document[]
 }
 
 model Employe {
@@ -74,9 +79,11 @@ model Employe {
   createdAt            DateTime   @default(now())
   updatedAt            DateTime   @updatedAt
 
-  pointages Pointage[]
-  paies     Paie[]
-  plannings Planning[]
+  pointages      Pointage[]
+  paies          Paie[]
+  plannings      Planning[]
+  congesAbsences CongeAbsence[]
+  documents      Document[]
 
   @@index([entrepriseId])
   @@index([email])
@@ -188,4 +195,155 @@ model ChatMessage {
 
   @@index([entrepriseId])
   @@index([createdAt])
+}
+
+model CongeAbsence {
+  id           String     @id @default(cuid())
+  entrepriseId String
+  entreprise   Entreprise @relation(fields: [entrepriseId], references: [id], onDelete: Cascade)
+  employeId    String
+  employe      Employe    @relation(fields: [employeId], references: [id], onDelete: Cascade)
+  type         String     // CONGE_PAYE | RTT | MALADIE | ABSENCE | SANS_SOLDE
+  dateDebut    DateTime
+  dateFin      DateTime
+  nbJours      Float      @default(1)
+  motif        String?
+  statut       String     @default("EN_ATTENTE")
+  commentaire  String?
+  approvePar   String?
+  approveAt    DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([entrepriseId])
+  @@index([employeId])
+  @@index([statut])
+}
+
+model Client {
+  id           String     @id @default(cuid())
+  entrepriseId String
+  entreprise   Entreprise @relation(fields: [entrepriseId], references: [id], onDelete: Cascade)
+  nom          String
+  email        String?
+  telephone    String?
+  adresse      String?
+  codePostal   String?
+  ville        String?
+  siret        String?
+  tvaNumero    String?
+  notes        String?
+  actif        Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  devis        Devis[]
+  factures     Facture[]
+
+  @@index([entrepriseId])
+}
+
+model Devis {
+  id                   String       @id @default(cuid())
+  entrepriseId         String
+  entreprise           Entreprise   @relation(fields: [entrepriseId], references: [id], onDelete: Cascade)
+  clientId             String
+  client               Client       @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  numero               String
+  objet                String
+  statut               String       @default("BROUILLON")
+  dateEmission         DateTime     @default(now())
+  dateValidite         DateTime?
+  montantHT            Float        @default(0)
+  tauxTVA              Float        @default(20)
+  montantTVA           Float        @default(0)
+  montantTTC           Float        @default(0)
+  notes                String?
+  conditionsPaiement   String?
+  convertedToFactureId String?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+
+  lignes               DevisLigne[]
+
+  @@index([entrepriseId])
+  @@index([clientId])
+  @@index([statut])
+}
+
+model DevisLigne {
+  id           String  @id @default(cuid())
+  devisId      String
+  devis        Devis   @relation(fields: [devisId], references: [id], onDelete: Cascade)
+  description  String
+  quantite     Float   @default(1)
+  prixUnitaire Float   @default(0)
+  taux         Float   @default(20)
+  montantHT    Float   @default(0)
+  ordre        Int     @default(0)
+
+  @@index([devisId])
+}
+
+model Facture {
+  id                   String         @id @default(cuid())
+  entrepriseId         String
+  entreprise           Entreprise     @relation(fields: [entrepriseId], references: [id], onDelete: Cascade)
+  clientId             String
+  client               Client         @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  devisId              String?
+  numero               String
+  objet                String
+  statut               String         @default("BROUILLON")
+  dateEmission         DateTime       @default(now())
+  dateEcheance         DateTime?
+  datePaiement         DateTime?
+  montantHT            Float          @default(0)
+  tauxTVA              Float          @default(20)
+  montantTVA           Float          @default(0)
+  montantTTC           Float          @default(0)
+  notes                String?
+  conditionsPaiement   String?
+  modePaiement         String?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+
+  lignes               FactureLigne[]
+
+  @@index([entrepriseId])
+  @@index([clientId])
+  @@index([statut])
+}
+
+model FactureLigne {
+  id           String   @id @default(cuid())
+  factureId    String
+  facture      Facture  @relation(fields: [factureId], references: [id], onDelete: Cascade)
+  description  String
+  quantite     Float    @default(1)
+  prixUnitaire Float    @default(0)
+  taux         Float    @default(20)
+  montantHT    Float    @default(0)
+  ordre        Int      @default(0)
+
+  @@index([factureId])
+}
+
+model Document {
+  id           String     @id @default(cuid())
+  entrepriseId String
+  entreprise   Entreprise @relation(fields: [entrepriseId], references: [id], onDelete: Cascade)
+  employeId    String?
+  employe      Employe?   @relation(fields: [employeId], references: [id], onDelete: SetNull)
+  nom          String
+  type         String     @default("AUTRE")
+  fichierUrl   String
+  taille       Int?
+  mimeType     String?
+  uploadePar   String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([entrepriseId])
+  @@index([employeId])
 }

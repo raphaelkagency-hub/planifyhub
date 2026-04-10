@@ -2,7 +2,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { formatDate, formatHours, formatCurrency } from '@/lib/utils'
-import { Users, Clock, Calendar, FileText, TrendingUp, CheckCircle, AlertCircle } from 'lucide-react'
+import { Users, Clock, Calendar, FileText, TrendingUp, CheckCircle, AlertCircle, CalendarOff, Receipt, FolderOpen } from 'lucide-react'
 
 async function getDashboardData(entrepriseId: string, userId: string, role: string) {
   const today = new Date()
@@ -38,7 +38,7 @@ async function getDashboardData(entrepriseId: string, userId: string, role: stri
     select: { heuresContractuelles: true, heuresSupPayees: true, tauxHeuresSuppMultiplier: true },
   })
 
-  const [totalEmployes, presentAujourdHui, congesEnCours, heuresCeMois, dernierPointages, prochainsPlannings, employesAvecSalaires] = await Promise.all([
+  const [totalEmployes, presentAujourdHui, congesEnCours, heuresCeMois, dernierPointages, prochainsPlannings, employesAvecSalaires, congesEnAttente, facturesStats, totalDocuments] = await Promise.all([
     prisma.employe.count({ where: { entrepriseId, actif: true } }),
     prisma.pointage.count({ where: { entrepriseId, date: { gte: today, lt: tomorrow }, statut: 'PRESENT' } }),
     prisma.pointage.count({ where: { entrepriseId, statut: 'CONGE', date: { gte: today } } }),
@@ -69,6 +69,13 @@ async function getDashboardData(entrepriseId: string, userId: string, role: stri
       take: 10,
       orderBy: { nom: 'asc' },
     }),
+    // New KPIs
+    prisma.congeAbsence.count({ where: { entrepriseId, statut: 'EN_ATTENTE' } }),
+    prisma.facture.findMany({
+      where: { entrepriseId, statut: { in: ['ENVOYEE', 'EN_RETARD'] } },
+      select: { montantTTC: true },
+    }),
+    prisma.document.count({ where: { entrepriseId } }),
   ])
 
   const heuresContratDefaut = entreprise?.heuresContractuelles ?? 35
@@ -87,11 +94,16 @@ async function getDashboardData(entrepriseId: string, userId: string, role: stri
     return { ...emp, heuresTravaillees, heuresSupp, salaireBrut, cotisationsSalariales, salaireNet }
   })
 
+  const totalImpayes = facturesStats.reduce((sum, f) => sum + f.montantTTC, 0)
+
   return {
     totalEmployes, presentAujourdHui, congesEnCours,
     heuresCeMois: heuresCeMois._sum.heuresTravaillees ?? 0,
     dernierPointages, prochainsPlannings, salaires,
     heuresSupPayees,
+    congesEnAttente,
+    totalImpayes,
+    totalDocuments,
     type: 'admin' as const,
   }
 }
@@ -196,7 +208,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-4">
         {[
           { label: 'Employés actifs', value: data.totalEmployes, icon: Users, color: '#1e3a5f', bg: '#e8f0fe' },
           { label: 'Présents aujourd\'hui', value: data.presentAujourdHui, icon: CheckCircle, color: '#16a34a', bg: '#dcfce7' },
@@ -214,6 +226,31 @@ export default async function DashboardPage() {
             </div>
           )
         })}
+      </div>
+
+      {/* Additional KPI Cards */}
+      <div className="grid sm:grid-cols-3 gap-5 mb-6">
+        <div className="card">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-3" style={{ background: '#fff7ed' }}>
+            <CalendarOff className="w-5 h-5" style={{ color: '#ea580c' }} />
+          </div>
+          <div className="text-3xl font-bold text-gray-900">{data.congesEnAttente}</div>
+          <div className="text-sm text-gray-500 mt-1">Congés en attente</div>
+        </div>
+        <div className="card">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-3" style={{ background: '#fef2f2' }}>
+            <Receipt className="w-5 h-5" style={{ color: '#dc2626' }} />
+          </div>
+          <div className="text-3xl font-bold text-gray-900">{formatCurrency(data.totalImpayes)}</div>
+          <div className="text-sm text-gray-500 mt-1">Factures impayées</div>
+        </div>
+        <div className="card">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-3" style={{ background: '#eff6ff' }}>
+            <FolderOpen className="w-5 h-5" style={{ color: '#2563eb' }} />
+          </div>
+          <div className="text-3xl font-bold text-gray-900">{data.totalDocuments}</div>
+          <div className="text-sm text-gray-500 mt-1">Documents</div>
+        </div>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-5 mb-5">
