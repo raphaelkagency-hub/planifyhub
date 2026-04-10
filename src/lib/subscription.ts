@@ -8,6 +8,7 @@ export interface Plan {
   features: string[]
   description: string
   popular?: boolean
+  stripePriceId?: string
 }
 
 export const PLANS: Plan[] = [
